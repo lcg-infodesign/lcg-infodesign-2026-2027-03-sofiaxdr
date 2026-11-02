@@ -1,18 +1,299 @@
-function preload() {
-  // put preload code here
+
+let database;
+let circuiti = [];
+let scuderie = [];
+
+let numeroColonne = 8;
+let margine = 30;
+
+let altezzaIntestazione = 145;
+let diametroCircuito;
+let altezzaCella;
+
+// Colori assegnati alle scuderie
+let coloriScuderie = {
+  "McLaren": [255, 125, 35],
+  "Red Bull": [35, 55, 125],
+  "Ferrari": [220, 35, 45],
+  "Mercedes": [115, 170, 175],
+  "Lotus": [190, 155, 65],
+  "Williams": [40, 100, 190],
+  "Renault": [245, 205, 40],
+  "Benetton": [35, 155, 110],
+  "Brabham": [35, 75, 115],
+  "Tyrrell": [50, 125, 190],
+  "BRM": [30, 115, 75],
+  "Cooper": [65, 145, 85],
+  "Alfa Romeo": [150, 30, 45]
+};
+
+async function setup() {
+
+  // CARICAMENTO DATABASE
+  database = await loadTable(
+    "assets/database.csv",
+    ",",
+    "header"
+  );
+
+  // LETTURA SCUDERIE
+  let scuderieValide = Object.keys(coloriScuderie);
+
+  for (let c = 1; c < database.getColumnCount(); c++) {
+
+    let nome = database.columns[c];
+
+    if (scuderieValide.includes(nome)) {
+
+      scuderie.push({
+        nome: nome,
+        colonna: c,
+        colore: coloriScuderie[nome]
+      });
+    }
+  }
+
+  // LETTURA CIRCUITI
+  for (let r = 0; r < database.getRowCount(); r++) {
+
+    let nomeCircuito = database.getString(r, 0);
+
+    if (
+      nomeCircuito !== "" &&
+      nomeCircuito.toLowerCase() !== "totale vittorie"
+    ) {
+
+      let circuito = {
+        nome: nomeCircuito,
+        vittorie: []
+      };
+
+      for (let s = 0; s < scuderie.length; s++) {
+
+        let colonna = scuderie[s].colonna;
+        let numero = Number(database.getString(r, colonna));
+
+        if (isNaN(numero)) {
+          numero = 0;
+        }
+
+        circuito.vittorie.push(numero);
+      }
+
+      circuiti.push(circuito);
+    }
+  }
+
+  // DIMENSIONI PAGINA
+ createCanvas(windowWidth, windowHeight);
+
+let numeroRighe = ceil(circuiti.length / numeroColonne);
+
+altezzaCella = (height - altezzaIntestazione - 20) / numeroRighe;
+
+let larghezzaCella = (width - margine * 2) / numeroColonne;
+
+diametroCircuito = min(
+  70,
+  altezzaCella * 0.52,
+  larghezzaCella * 0.38
+);
+
+  print("Circuiti caricati:", circuiti.length);
+  print("Scuderie caricate:", scuderie.length);
 }
 
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  console.log('p5.js version:', p5.VERSION);
-  // put setup code here
-  const message =
-    "This is a template repository\nfor the course Laboratorio di Computergrafica\nCommunication Design, Politecnico di Milano";
-  textAlign(CENTER, CENTER);
-  textSize(16);
-  text(message, width / 2, height / 2);
-}
 
+// DISEGNO GENERALE
 function draw() {
-  // put drawing code here
+
+  background(250, 248, 243);
+
+  disegnaTitolo();
+  disegnaLegenda();
+  disegnaGriglia();
 }
+
+
+// TITOLO E DESCRIZIONE
+function disegnaTitolo() {
+
+  noStroke();
+  textAlign(LEFT, TOP);
+
+  fill(20);
+  textSize(27);
+  textStyle(BOLD);
+
+  text("CIRCUITI DI FORMULA 1", margine, 35);
+
+  textSize(19);
+  textStyle(NORMAL);
+
+  text("E le scuderie migliori", margine, 70);
+
+  textSize(11);
+  fill(90);
+
+  text(
+    "77 circuiti · Scuderie con almeno 10 vittorie in carriera",
+    margine,
+    105
+  );
+}
+
+
+// LEGENDA SCUDERIE
+function disegnaLegenda() {
+
+  let larghezzaRiquadro = min(490, width * 0.48);
+  let altezzaRiquadro = 112;
+
+  let xRiquadro = width - margine - larghezzaRiquadro;
+  let yRiquadro = 20;
+
+  // Riquadro esterno
+  noFill();
+  stroke(40);
+  strokeWeight(1);
+
+  rect(
+    xRiquadro,
+    yRiquadro,
+    larghezzaRiquadro,
+    altezzaRiquadro
+  );
+
+  // Titolo della legenda
+  noStroke();
+  fill(30);
+  textAlign(LEFT, TOP);
+  textSize(11);
+  textStyle(BOLD);
+
+  text("SCUDERIE", xRiquadro + 14, yRiquadro + 10);
+
+  // Voci della legenda
+  textStyle(NORMAL);
+  textSize(10);
+
+  for (let i = 0; i < scuderie.length; i++) {
+
+    let colonna = floor(i / 7);
+    let riga = i % 7;
+
+    let x = xRiquadro + 14 + colonna * 145;
+    let y = yRiquadro + 34 + riga * 11;
+
+    let colore = scuderie[i].colore;
+
+    noStroke();
+    fill(colore[0], colore[1], colore[2]);
+
+    circle(x + 4, y + 4, 7);
+
+    fill(35);
+    textAlign(LEFT, CENTER);
+
+    text(scuderie[i].nome, x + 13, y + 4);
+  }
+}
+
+// GRIGLIA DEI CIRCUITI
+function disegnaGriglia() {
+
+  let larghezzaCella = (width - margine * 2) / numeroColonne;
+
+  for (let i = 0; i < circuiti.length; i++) {
+
+    let colonna = i % numeroColonne;
+    let riga = floor(i / numeroColonne);
+
+    let x = margine + colonna * larghezzaCella + larghezzaCella / 2;
+
+    let y = altezzaIntestazione + riga * altezzaCella
+            + altezzaCella / 2;
+
+    // Cerchio esterno
+    noFill();
+    stroke(25);
+    strokeWeight(1);
+
+    circle(x, y, diametroCircuito);
+
+    // Vittorie delle scuderie
+    disegnaVittorie(circuiti[i], x, y);
+
+    // Nome del circuito
+    noStroke();
+    fill(30);
+
+    textAlign(CENTER, TOP);
+    textStyle(NORMAL);
+
+    textSize(min(10, altezzaCella * 0.16));
+
+    text(
+      circuiti[i].nome,
+      x - larghezzaCella / 2 + 3,
+      y + diametroCircuito / 2 + 3,
+      larghezzaCella - 6,
+      altezzaCella - diametroCircuito / 2 - 5
+    );
+  }
+}
+
+
+// CERCHI COLORATI E VITTORIE
+function disegnaVittorie(circuito, centroX, centroY) {
+
+  for (let s = 0; s < scuderie.length; s++) {
+
+    let numeroVittorie = circuito.vittorie[s];
+
+    // Se la scuderia non ha vinto, non disegniamo nulla
+    if (numeroVittorie <= 0) {
+      continue;
+    }
+
+    let colore = scuderie[s].colore;
+
+    // Posizione del cerchio della scuderia
+    let colonna = s % 4;
+    let riga = floor(s / 4);
+
+    let offsetX = (colonna - 1.5) * 7;
+    let offsetY = (riga - 1.5) * 7;
+
+    let x = centroX + offsetX;
+    let y = centroY + offsetY;
+
+    // Dimensione proporzionale alle vittorie
+    let raggio = 2 + sqrt(numeroVittorie) * 0.65;
+
+    // Cerchio trasparente della scuderia
+    fill(colore[0], colore[1], colore[2], 55);
+    stroke(colore[0], colore[1], colore[2]);
+    strokeWeight(0.8);
+
+    circle(x, y, 2);
+
+    // Pallini: uno per ogni vittoria
+    noStroke();
+    fill(colore[0], colore[1], colore[2]);
+
+    for (let v = 0; v < numeroVittorie; v++) {
+
+      let angolo = v * 137.5;
+      let distanza = numeroVittorie === 1
+        ? 0
+        : sqrt(v / numeroVittorie) * (raggio - 3);
+
+      let px = x + cos(angolo) * distanza;
+      let py = y + sin(angolo) * distanza;
+
+      circle(px, py, 3.5);
+    }
+  }
+}
+
