@@ -1,7 +1,15 @@
-
 let database;
-let circuiti = [];
-let scuderie = [];
+let nomiCircuiti = [];
+let vittorieCircuiti = [];
+
+let nomiScuderie = [ 
+  "McLaren", "Red Bull", "Ferrari", "Mercedes", "Lotus", "Williams", "Renault", "Benetton", "Brabham", "Tyrrell", "BRM", "Cooper", "Alfa Romeo"
+];
+
+let colonneScuderie = [];
+let coloriScuderie = [
+  [255, 125, 35], [35, 55, 125], [220, 35, 45], [115, 170, 175], [190, 155, 65], [40, 100, 190], [245, 205, 40], [35, 155, 110], [35, 75, 115], [50, 125, 190], [30, 115, 75], [65, 145, 85], [150, 30, 45]
+];
 
 let numeroColonne = 8;
 let margine = 30;
@@ -9,23 +17,6 @@ let margine = 30;
 let altezzaIntestazione = 145;
 let diametroCircuito;
 let altezzaCella;
-
-// Colori assegnati alle scuderie
-let coloriScuderie = {
-  "McLaren": [255, 125, 35],
-  "Red Bull": [35, 55, 125],
-  "Ferrari": [220, 35, 45],
-  "Mercedes": [115, 170, 175],
-  "Lotus": [190, 155, 65],
-  "Williams": [40, 100, 190],
-  "Renault": [245, 205, 40],
-  "Benetton": [35, 155, 110],
-  "Brabham": [35, 75, 115],
-  "Tyrrell": [50, 125, 190],
-  "BRM": [30, 115, 75],
-  "Cooper": [65, 145, 85],
-  "Alfa Romeo": [150, 30, 45]
-};
 
 async function setup() {
 
@@ -36,22 +27,56 @@ async function setup() {
     "header"
   );
 
-  // LETTURA SCUDERIE
-  let scuderieValide = Object.keys(coloriScuderie);
+  // LETTURA COLONNE SCUDERIE
+  for (let s = 0; s < nomiScuderie.length; s++) {
+    colonneScuderie.push(s + 1);
+  }
 
-  for (let c = 1; c < database.getColumnCount(); c++) {
+  // LETTURA CIRCUITI
+  for (let r = 0; r < database.getRowCount(); r++) {
 
-    let nome = database.columns[c];
+    let nomeCircuito = database.getString(r, 0);
 
-    if (scuderieValide.includes(nome)) {
+    if (
+      nomeCircuito !== "" &&
+      nomeCircuito !== "totale vittorie"
+    ) {
 
-      scuderie.push({
-        nome: nome,
-        colonna: c,
-        colore: coloriScuderie[nome]
-      });
+      nomiCircuiti.push(nomeCircuito);
+
+      let vittorie = [];
+
+      for (let s = 0; s < nomiScuderie.length; s++) {
+
+        let colonna = colonneScuderie[s];
+        let numero = Number(database.getString(r, colonna));
+
+        vittorie.push(numero);
+      }
+
+      vittorieCircuiti.push(vittorie);
     }
   }
+
+  // DIMENSIONI PAGINA
+  createCanvas(windowWidth, windowHeight);
+
+  let numeroRighe = ceil(nomiCircuiti.length / numeroColonne);
+
+  altezzaCella = (height - altezzaIntestazione - 20) / numeroRighe;
+
+  let larghezzaCella = (width - margine * 2) / numeroColonne;
+
+  diametroCircuito = min(
+    70,
+    altezzaCella * 0.52,
+    larghezzaCella * 0.38
+  );
+
+  print("Circuiti caricati:", nomiCircuiti.length);
+  print("Scuderie caricate:", nomiScuderie.length);
+}
+
 
   // LETTURA CIRCUITI
   for (let r = 0; r < database.getRowCount(); r++) {
@@ -101,13 +126,13 @@ diametroCircuito = min(
 
   print("Circuiti caricati:", circuiti.length);
   print("Scuderie caricate:", scuderie.length);
-}
+
 
 
 // DISEGNO GENERALE
 function draw() {
 
-  background(250, 248, 243);
+  background(230, 230, 230);
 
   disegnaTitolo();
   disegnaLegenda();
@@ -136,7 +161,7 @@ function disegnaTitolo() {
   fill(90);
 
   text(
-    "77 circuiti · Scuderie con almeno 10 vittorie in carriera",
+    "77 circuiti e le scuderie con almeno 10 vittorie in carriera",
     margine,
     105
   );
@@ -177,7 +202,7 @@ function disegnaLegenda() {
   textStyle(NORMAL);
   textSize(10);
 
-  for (let i = 0; i < scuderie.length; i++) {
+  for (let i = 0; i < nomiScuderie.length; i++) {
 
     let colonna = floor(i / 7);
     let riga = i % 7;
@@ -185,7 +210,7 @@ function disegnaLegenda() {
     let x = xRiquadro + 14 + colonna * 145;
     let y = yRiquadro + 34 + riga * 11;
 
-    let colore = scuderie[i].colore;
+    let colore = coloriScuderie[i];
 
     noStroke();
     fill(colore[0], colore[1], colore[2]);
@@ -195,16 +220,17 @@ function disegnaLegenda() {
     fill(35);
     textAlign(LEFT, CENTER);
 
-    text(scuderie[i].nome, x + 13, y + 4);
+    text(nomiScuderie[i], x + 13, y + 4);
   }
 }
+
 
 // GRIGLIA DEI CIRCUITI
 function disegnaGriglia() {
 
   let larghezzaCella = (width - margine * 2) / numeroColonne;
 
-  for (let i = 0; i < circuiti.length; i++) {
+  for (let i = 0; i < nomiCircuiti.length; i++) {
 
     let colonna = i % numeroColonne;
     let riga = floor(i / numeroColonne);
@@ -222,7 +248,7 @@ function disegnaGriglia() {
     circle(x, y, diametroCircuito);
 
     // Vittorie delle scuderie
-    disegnaVittorie(circuiti[i], x, y);
+    disegnaVittorie(i, x, y);
 
     // Nome del circuito
     noStroke();
@@ -234,7 +260,7 @@ function disegnaGriglia() {
     textSize(min(10, altezzaCella * 0.16));
 
     text(
-      circuiti[i].nome,
+      nomiCircuiti[i],
       x - larghezzaCella / 2 + 3,
       y + diametroCircuito / 2 + 3,
       larghezzaCella - 6,
@@ -245,55 +271,56 @@ function disegnaGriglia() {
 
 
 // CERCHI COLORATI E VITTORIE
-function disegnaVittorie(circuito, centroX, centroY) {
+function disegnaVittorie(indiceCircuito, centroX, centroY) {
 
-  for (let s = 0; s < scuderie.length; s++) {
+  for (let s = 0; s < nomiScuderie.length; s++) {
 
-    let numeroVittorie = circuito.vittorie[s];
+    let numeroVittorie = vittorieCircuiti[indiceCircuito][s];
 
-    // Se la scuderia non ha vinto, non disegniamo nulla
-    if (numeroVittorie <= 0) {
-      continue;
-    }
+    if (numeroVittorie > 0) {
 
-    let colore = scuderie[s].colore;
+      let colore = coloriScuderie[s];
 
-    // Posizione del cerchio della scuderia
-    let colonna = s % 4;
-    let riga = floor(s / 4);
+      // Posizione del cerchio della scuderia
+      let colonna = s % 4;
+      let riga = floor(s / 4);
 
-    let offsetX = (colonna - 1.5) * 7;
-    let offsetY = (riga - 1.5) * 7;
+      let offsetX = (colonna - 1.5) * 7;
+      let offsetY = (riga - 1.5) * 7;
 
-    let x = centroX + offsetX;
-    let y = centroY + offsetY;
+      let x = centroX + offsetX;
+      let y = centroY + offsetY;
 
-    // Dimensione proporzionale alle vittorie
-    let raggio = 2 + sqrt(numeroVittorie) * 0.65;
+      // Dimensione proporzionale alle vittorie
+      let raggio = 2 + sqrt(numeroVittorie) * 0.65;
 
-    // Cerchio trasparente della scuderia
-    fill(colore[0], colore[1], colore[2], 55);
-    stroke(colore[0], colore[1], colore[2]);
-    strokeWeight(0.8);
+      // Cerchio trasparente della scuderia
+      fill(colore[0], colore[1], colore[2], 55);
+      stroke(colore[0], colore[1], colore[2]);
+      strokeWeight(0.8);
 
-    circle(x, y, 2);
+      circle(x, y, 2);
 
-    // Pallini: uno per ogni vittoria
-    noStroke();
-    fill(colore[0], colore[1], colore[2]);
+      // Pallini: uno per ogni vittoria
+      noStroke();
+      fill(colore[0], colore[1], colore[2]);
 
-    for (let v = 0; v < numeroVittorie; v++) {
+      for (let v = 0; v < numeroVittorie; v++) {
 
-      let angolo = v * 137.5;
-      let distanza = numeroVittorie === 1
-        ? 0
-        : sqrt(v / numeroVittorie) * (raggio - 3);
+        let angolo = v * 137.5;
 
-      let px = x + cos(angolo) * distanza;
-      let py = y + sin(angolo) * distanza;
 
-      circle(px, py, 3.5);
+
+        //creo una sovrapposizione a "spirale" per ingrandire caiscun pallino
+        let distanza = numeroVittorie === 1
+          ? 0
+          : sqrt(v / numeroVittorie) * (raggio - 3);
+
+        let px = x + cos(angolo) * distanza;
+        let py = y + sin(angolo) * distanza;
+
+        circle(px, py, 3.5);
+      }
     }
   }
 }
-
