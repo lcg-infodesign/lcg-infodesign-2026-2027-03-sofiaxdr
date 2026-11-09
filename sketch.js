@@ -46,13 +46,13 @@ async function setup() {
 
       let vittorie = [];
 
-      for (let s = 0; s < nomiScuderie.length; s++) {
+    for (let s = 0; s < nomiScuderie.length; s++) {
 
-        let colonna = colonneScuderie[s];
-        let numero = Number(database.getString(r, colonna));
+  let colonna = colonneScuderie[s];
+  let numero = database.getNum(r, colonna);
 
-        vittorie.push(numero);
-      }
+  vittorie.push(numero);
+}
 
       vittorieCircuiti.push(vittorie);
     }
@@ -78,56 +78,7 @@ async function setup() {
 }
 
 
-  // LETTURA CIRCUITI
-  for (let r = 0; r < database.getRowCount(); r++) {
-
-    let nomeCircuito = database.getString(r, 0);
-
-    if (
-      nomeCircuito !== "" &&
-      nomeCircuito.toLowerCase() !== "totale vittorie"
-    ) {
-
-      let circuito = {
-        nome: nomeCircuito,
-        vittorie: []
-      };
-
-      for (let s = 0; s < scuderie.length; s++) {
-
-        let colonna = scuderie[s].colonna;
-        let numero = Number(database.getString(r, colonna));
-
-        if (isNaN(numero)) {
-          numero = 0;
-        }
-
-        circuito.vittorie.push(numero);
-      }
-
-      circuiti.push(circuito);
-    }
-  }
-
-  // DIMENSIONI PAGINA
- createCanvas(windowWidth, windowHeight);
-
-let numeroRighe = ceil(circuiti.length / numeroColonne);
-
-altezzaCella = (height - altezzaIntestazione - 20) / numeroRighe;
-
-let larghezzaCella = (width - margine * 2) / numeroColonne;
-
-diametroCircuito = min(
-  70,
-  altezzaCella * 0.52,
-  larghezzaCella * 0.38
-);
-
-  print("Circuiti caricati:", circuiti.length);
-  print("Scuderie caricate:", scuderie.length);
-
-
+  
 
 // DISEGNO GENERALE
 function draw() {
